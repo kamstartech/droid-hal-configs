@@ -424,24 +424,13 @@ if [ -e packaged-in-main-spec.files ]; then
   delete_files tmp/droid-config.files packaged-in-main-spec.files 0
 fi
 
-# Mount units are generated, packaged, and enabled by droid-hal.
-# Keep them out of droid-config to avoid file ownership conflicts.
-cat > tmp/droid-hal-owned.files <<'EOF'
-/usr/lib/systemd/system/system.mount
-/usr/lib/systemd/system/system_root.mount
-/usr/lib/systemd/system/vendor.mount
-/usr/lib/systemd/system/vendor-bt_firmware.mount
-/usr/lib/systemd/system/vendor-dsp.mount
-/usr/lib/systemd/system/vendor-firmware_mnt.mount
-/usr/lib/systemd/system/mnt-vendor-persist.mount
-/usr/lib/systemd/system/local-fs.target.wants/system_root.mount
-/usr/lib/systemd/system/local-fs.target.wants/vendor.mount
-/usr/lib/systemd/system/local-fs.target.wants/vendor-bt_firmware.mount
-/usr/lib/systemd/system/local-fs.target.wants/vendor-dsp.mount
-/usr/lib/systemd/system/local-fs.target.wants/vendor-firmware_mnt.mount
-/usr/lib/systemd/system/local-fs.target.wants/mnt-vendor-persist.mount
-EOF
-delete_files tmp/droid-config.files tmp/droid-hal-owned.files 1
+# Mount units: for perseus, droid-hal skips generating these (makefstab_skip_entries)
+# so droid-config owns them via sparse overlay with correct device paths.
+# On other devices using this fork, droid-hal still generates them and they would
+# conflict — those devices should add their own makefstab_skip_entries.
+# cat > tmp/droid-hal-owned.files <<'EOF'
+# EOF
+# delete_files tmp/droid-config.files tmp/droid-hal-owned.files 1
 
 # Overlay copies can add the same final path more than once; keep the last
 # installed file on disk but only list each packaged path once.
