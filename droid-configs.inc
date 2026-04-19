@@ -65,6 +65,9 @@
 %define rpm_vendor %{vendor}
 %endif
 
+%define pulseversion %{expand:%(rpm -q --qf '[%%{version}]' pulseaudio)}
+%define pulsemajorminor %{expand:%(echo '%{pulseversion}' | cut -d+ -f1)}
+
 %define board_mapping_dir %{_datadir}/ssu/board-mappings.d
 %define board_mapping_file %{board_mapping_dir}/05-%{rpm_vendor}-%{rpm_device}.ini
 
@@ -90,6 +93,9 @@ Requires: sed
 %if 0%{!?native_build:1}
 Requires: droid-hal
 %endif
+Provides: ofono-configs-binder
+Conflicts: ofono-configs-binder
+Obsoletes: ofono-configs-binder
 %if 0%{?community_adaptation:1}
 # because it provides one ssu feature, do:
 Requires: community-adaptation
@@ -175,7 +181,7 @@ Provides:   droid-config-preinit-plugins
 %package pulseaudio-settings
 Summary:    PulseAudio settings for %{rpm_device} hw
 Provides:   droid-config-pulseaudio-settings
-Requires:   pulseaudio >= 15.0
+Requires:   pulseaudio >= %{pulsemajorminor}
 Requires:   pulseaudio-modules-nemo-parameters >= 11.1.24
 Requires:   pulseaudio-modules-nemo-stream-restore >= 11.1.24
 Requires:   pulseaudio-modules-nemo-mainvolume >= 11.1.24
@@ -417,6 +423,30 @@ fi
 if [ -e packaged-in-main-spec.files ]; then
   delete_files tmp/droid-config.files packaged-in-main-spec.files 0
 fi
+
+# Mount units are generated, packaged, and enabled by droid-hal.
+# Keep them out of droid-config to avoid file ownership conflicts.
+cat > tmp/droid-hal-owned.files <<'EOF'
+/usr/lib/systemd/system/system.mount
+/usr/lib/systemd/system/system_root.mount
+/usr/lib/systemd/system/vendor.mount
+/usr/lib/systemd/system/vendor-bt_firmware.mount
+/usr/lib/systemd/system/vendor-dsp.mount
+/usr/lib/systemd/system/vendor-firmware_mnt.mount
+/usr/lib/systemd/system/mnt-vendor-persist.mount
+/usr/lib/systemd/system/local-fs.target.wants/system_root.mount
+/usr/lib/systemd/system/local-fs.target.wants/vendor.mount
+/usr/lib/systemd/system/local-fs.target.wants/vendor-bt_firmware.mount
+/usr/lib/systemd/system/local-fs.target.wants/vendor-dsp.mount
+/usr/lib/systemd/system/local-fs.target.wants/vendor-firmware_mnt.mount
+/usr/lib/systemd/system/local-fs.target.wants/mnt-vendor-persist.mount
+EOF
+delete_files tmp/droid-config.files tmp/droid-hal-owned.files 1
+
+# Overlay copies can add the same final path more than once; keep the last
+# installed file on disk but only list each packaged path once.
+awk '!seen[$0]++' tmp/droid-config.files > tmp/droid-config.files.uniq
+mv tmp/droid-config.files.uniq tmp/droid-config.files
 
 # We want to keep some files in separate subpackages.
 # NOTE: some files might get to wrong place with this because of string assumption.
@@ -684,5 +714,3 @@ Recommends: csd
 Pattern with packages for common HW configurations
 
 %files -n patterns-sailfish-device-configuration-common-%{rpm_device}
-
-
