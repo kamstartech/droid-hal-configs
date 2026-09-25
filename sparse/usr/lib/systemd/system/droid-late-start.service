@@ -5,7 +5,11 @@ Before=network.target start-user-session@USER.service bluetooth.service ofono.se
 Conflicts=shutdown.target
 
 [Service]
-ExecStart=/usr/bin/setprop droid.late_start trigger_late_start
+# The libhybris setprop tool falls back to the old property-service protocol if
+# ro.property_service.version is not set. That race against droid-hal-init can
+# make this service fail on early boots. Prime the property first (no-op if it
+# is already set), then trigger the late_start class.
+ExecStart=/bin/sh -c '/usr/bin/setprop ro.property_service.version 2 2>/dev/null; /usr/bin/setprop droid.late_start trigger_late_start'
 
 [Install]
 WantedBy=graphical.target

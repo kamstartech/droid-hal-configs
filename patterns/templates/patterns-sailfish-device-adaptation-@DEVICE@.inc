@@ -55,6 +55,9 @@ Requires: usb-moded
 # hammerhead, grouper, and maguro use this in scripts, so include for all
 Requires: rfkill
 
+# Bluetooth on Android 8+ Qualcomm devices: bridge Android HIDL BT to BlueZ
+Requires: bluebinder
+
 # enable device lock and allow to select untrusted software
 Requires: jolla-devicelock-daemon-encsfa
 

@@ -65,9 +65,6 @@
 %define rpm_vendor %{vendor}
 %endif
 
-%define pulseversion %{expand:%(rpm -q --qf '[%%{version}]' pulseaudio)}
-%define pulsemajorminor %{expand:%(echo '%{pulseversion}' | cut -d+ -f1)}
-
 %define board_mapping_dir %{_datadir}/ssu/board-mappings.d
 %define board_mapping_file %{board_mapping_dir}/05-%{rpm_vendor}-%{rpm_device}.ini
 
@@ -93,9 +90,6 @@ Requires: sed
 %if 0%{!?native_build:1}
 Requires: droid-hal
 %endif
-Provides: ofono-configs-binder
-Conflicts: ofono-configs-binder
-Obsoletes: ofono-configs-binder
 %if 0%{?community_adaptation:1}
 # because it provides one ssu feature, do:
 Requires: community-adaptation
@@ -118,6 +112,8 @@ Obsoletes: usb-moded-pc-suite-mode-android
 # Config packages from usb-moded source with overlapping purposes
 Conflicts: usb-moded-mtp-mode-android-ffs
 Obsoletes: usb-moded-mtp-mode-android-ffs
+Conflicts: usb-moded-developer-mode
+Obsoletes: usb-moded-developer-mode
 %description
 %{summary}.
 
@@ -144,9 +140,9 @@ Requires:   ohm-plugin-resolver
 Requires:   ohm-plugin-ruleengine
 Requires:   ohm-plugin-profile
 Requires:   ohm-plugin-route
-Requires:   pulseaudio-modules-nemo-common >= 11.1.24
-Requires:   pulseaudio-policy-enforcement >= 11.1.35
-Requires:   policy-settings-common >= 0.7.3
+Requires:   pulseaudio-modules-nemo-common >= 14.2.31
+Requires:   pulseaudio-policy-enforcement >= 14.2.47
+Requires:   policy-settings-common >= 0.13.0
 Obsoletes:  ohm-config <= 1.1.15
 # ohm-configs-default should not be installed ever, thus no version
 # specification defined here.
@@ -181,16 +177,16 @@ Provides:   droid-config-preinit-plugins
 %package pulseaudio-settings
 Summary:    PulseAudio settings for %{rpm_device} hw
 Provides:   droid-config-pulseaudio-settings
-Requires:   pulseaudio >= %{pulsemajorminor}
-Requires:   pulseaudio-modules-nemo-parameters >= 11.1.24
-Requires:   pulseaudio-modules-nemo-stream-restore >= 11.1.24
-Requires:   pulseaudio-modules-nemo-mainvolume >= 11.1.24
+Requires:   pulseaudio >= 14.2
+Requires:   pulseaudio-modules-nemo-parameters >= 14.2.31
+Requires:   pulseaudio-modules-nemo-stream-restore >= 14.2.31
+Requires:   pulseaudio-modules-nemo-mainvolume >= 14.2.31
 %if 0%{!?native_build:1}
-Requires:   pulseaudio-modules-droid >= 11.1.66
+Requires:   pulseaudio-modules-droid >= 14.2.66
 %else
 Requires:   pulseaudio-module-keepalive
 %endif
-Requires:   pulseaudio-policy-enforcement >= 11.1.35
+Requires:   pulseaudio-policy-enforcement >= 14.2.47
 Provides:   pulseaudio-settings
 
 %description pulseaudio-settings
@@ -424,18 +420,6 @@ if [ -e packaged-in-main-spec.files ]; then
   delete_files tmp/droid-config.files packaged-in-main-spec.files 0
 fi
 
-# Mount units: for perseus, droid-hal skips generating these (makefstab_skip_entries)
-# so droid-config owns them via sparse overlay with correct device paths.
-# On other devices using this fork, droid-hal still generates them and they would
-# conflict — those devices should add their own makefstab_skip_entries.
-# cat > tmp/droid-hal-owned.files <<'EOF'
-# EOF
-# delete_files tmp/droid-config.files tmp/droid-hal-owned.files 1
-
-# Overlay copies can add the same final path more than once; keep the last
-# installed file on disk but only list each packaged path once.
-awk '!seen[$0]++' tmp/droid-config.files > tmp/droid-config.files.uniq
-mv tmp/droid-config.files.uniq tmp/droid-config.files
 
 # We want to keep some files in separate subpackages.
 # NOTE: some files might get to wrong place with this because of string assumption.

@@ -18,9 +18,9 @@ PrivateTmp=true
 ExecStartPre=-/bin/sh /usr/bin/droid/droid-hal-early-init.sh
 ExecStart=/bin/sh /usr/bin/droid/droid-hal-startup.sh
 ExecStop=/bin/sh /usr/bin/droid/droid-hal-shutdown.sh
-Restart=always
+Restart=on-failure
 # Lets make sure we don't block minutes in case of errors.
-TimeoutSec=15
+TimeoutSec=90
 StartLimitInterval=60
 StartLimitBurst=2
 
